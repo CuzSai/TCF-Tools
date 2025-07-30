@@ -22,12 +22,12 @@
         <div class="navigation">
             <h3>Navigation</h3>
             <div>
-                <a href="/map.html"><img src="./images/Nav_Map.png" /> Interactive Map </a>
-                <a href="/calculator.html"><img src="./images/Nav_Calculator.png" /> Weapon Calculator </a>
-                <a href="/forge.html"><img src="./images/Nav_Forge.png" /> Forge Simulator </a>
-                <a href="/progress.html"><img src="./images/Nav_Progress.png" /> Progress Tracker </a>
+                <a href="map.html"><img src="./images/Nav_Map.png" /> Interactive Map </a>
+                <a href="calculator.html"><img src="./images/Nav_Calculator.png" /> Weapon Calculator </a>
+                <a href="forge.html"><img src="./images/Nav_Forge.png" /> Forge Simulator </a>
+                <a href="progress.html"><img src="./images/Nav_Progress.png" /> Progress Tracker </a>
                 <a href="https://tracker.thecyclefrontier.wiki"><img src="./images/Nav_Tracker.png" /> Item Tracker </a>
-                <a href="/loadout.html"><img src="./images/Nav_Loadout.png" /> Loadout Generator</a>
+                <a href="loadout.html"><img src="./images/Nav_Loadout.png" /> Loadout Generator</a>
             </div>
         </div>
     </div>
