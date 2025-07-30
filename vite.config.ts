@@ -6,7 +6,7 @@ import { resolve } from 'node:path';
 
 //Define config
 export default defineConfig({
-    base: '/TCF-Tools/',
+    base: './',
     plugins: [vue()],
     resolve: {
         alias: {
