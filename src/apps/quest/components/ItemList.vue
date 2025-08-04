@@ -27,11 +27,27 @@
             <input type="text" v-model="searchValue" placeholder="Search for items..." />
         </div>
 
+        <!-- All Items Section -->
         <section class="list__container">
-            <div v-for="(amount, index) in currentItems" :key="index.toString()" class="item__row" :class="{matching: rowColor(index.toString())}">
+            <div
+                v-for="(amount, index) in currentItems"
+                :key="index.toString()"
+                class="item__row"
+                :class="{matching: rowColor(index.toString())}">
+
                 <img :src="'/map-images/item-images/' + itemName(index.toString(), true) + '.png'" class="item__image" />
+
+                <!-- Tracker Input placed in the middle column -->
+                <input
+                    type="number"
+                    v-model.number="itemTracker[index]"
+                    min="0"
+                    class="item-tracker-input"
+                    placeholder="0"
+                    v-if="amount > 0" />
+
                 <span>
-                    <span v-if="index.toString() == 'SoftCurrency'"> {{ amount / 1000 }}k </span>
+                    <span v-if="index.toString() === 'SoftCurrency'"> {{ amount / 1000 }}k </span>
                     <span v-else> {{ amount }}</span>
                     {{ itemName(index.toString()) }}
                 </span>
@@ -48,10 +64,25 @@
         </div>
 
         <section class="list__container">
-            <div v-for="(amount, index) in currentMissionsItems" :key="index.toString()" class="item__row" :class="{matching: rowColor(index.toString())}">
+            <div
+                v-for="(amount, index) in currentMissionsItems"
+                :key="index.toString()"
+                class="item__row"
+                :class="{matching: rowColor(index.toString())}">
+
                 <img :src="'/map-images/item-images/' + itemName(index.toString(), true) + '.png'" class="item__image" />
+
+                <!-- Tracker Input added here -->
+                <input
+                    type="number"
+                    v-model.number="itemTracker[index]"
+                    min="0"
+                    class="item-tracker-input"
+                    placeholder="0"
+                    v-if="amount > 0" />
+
                 <span>
-                    <span v-if="index.toString() == 'SoftCurrency'"> {{ amount / 1000 }}k </span>
+                    <span v-if="index.toString() === 'SoftCurrency'"> {{ amount / 1000 }}k </span>
                     <span v-else> {{ amount }}</span>
                     {{ itemName(index.toString()) }}
                 </span>
@@ -68,10 +99,25 @@
         </div>
 
         <section class="list__container">
-            <div v-for="(amount, index) in currentQuarterItems" :key="index.toString()" class="item__row" :class="{matching: rowColor(index.toString())}">
+            <div
+                v-for="(amount, index) in currentQuarterItems"
+                :key="index.toString()"
+                class="item__row"
+                :class="{matching: rowColor(index.toString())}">
+
                 <img :src="'/map-images/item-images/' + itemName(index.toString(), true) + '.png'" class="item__image" />
+
+                <!-- Tracker Input added here -->
+                <input
+                    type="number"
+                    v-model.number="itemTracker[index]"
+                    min="0"
+                    class="item-tracker-input"
+                    placeholder="0"
+                    v-if="amount > 0" />
+
                 <span>
-                    <span v-if="index.toString() == 'SoftCurrency'"> {{ amount / 1000 }}k </span>
+                    <span v-if="index.toString() === 'SoftCurrency'"> {{ amount / 1000 }}k </span>
                     <span v-else> {{ amount }}</span>
                     {{ itemName(index.toString()) }}
                 </span>
@@ -112,8 +158,8 @@ export default defineComponent({
             techTreeData: techTreeData,
 
             slideIndex: 1,
-
             searchValue: "",
+            itemTracker: {} // new item tracker object to store counts keyed by item id/name
         };
     },
     mounted() {
@@ -338,9 +384,9 @@ p.complete {
 
 .item__row {
     display: grid;
-    grid-template-columns: 1fr 5fr;
+    grid-template-columns: auto min-content 1fr;
     gap: 0.5rem;
-
+    align-items: center;
     height: var(--space-xl);
 }
 
@@ -502,5 +548,16 @@ p.complete {
     height: 100%;
     font-size: 1.2rem;
     padding: 0.2rem;
+}
+
+.item-tracker-input {
+    width: 40px;             /* reduced width */
+    height: 1.8rem;          /* set a fixed small height */
+    font-size: 0.9rem;
+    padding: 0.2rem;
+    border: 1px solid var(--border-color-base);
+    border-radius: 4px;
+    text-align: center;
+    margin-left: 0.5rem;      /* offset to the right */
 }
 </style>
