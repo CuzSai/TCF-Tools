@@ -35,7 +35,7 @@
                 class="item__row"
                 :class="{
                   matching: rowColor(index.toString()),
-                  completed: isCompleted(index.toString())
+                  completed: isCompletedFor(index.toString(), currentItems)
                 }"
             >
                 <img :src="'/map-images/item-images/' + itemName(index.toString(), true) + '.png'" class="item__image" />
@@ -58,6 +58,7 @@
         </section>
     </div>
 
+    <!-- Mission Items Section -->
     <div class="item-list__container-inner fade">
         <p v-if="Object.keys(currentMissionsItems).length > 0">Complete missions to update the list</p>
         <p v-else class="complete">You have completed every mission.</p>
@@ -71,11 +72,14 @@
                 v-for="(amount, index) in currentMissionsItems"
                 :key="index.toString()"
                 class="item__row"
-                :class="{matching: rowColor(index.toString())}">
-
+                :class="{
+                  matching: rowColor(index.toString()),
+                  completed: isCompletedFor(index.toString(), currentMissionsItems)
+                }"
+            >
                 <img :src="'/map-images/item-images/' + itemName(index.toString(), true) + '.png'" class="item__image" />
 
-                <!-- Tracker Input added here -->
+                <!-- Tracker Input for mission items -->
                 <input
                     type="number"
                     v-model.number="itemTracker[index]"
@@ -93,6 +97,7 @@
         </section>
     </div>
 
+    <!-- Quarter Items Section -->
     <div class="item-list__container-inner fade">
         <p v-if="Object.keys(currentQuarterItems).length > 0">Complete upgrades to update the list</p>
         <p v-else class="complete">You have completed every upgrade.</p>
@@ -106,11 +111,14 @@
                 v-for="(amount, index) in currentQuarterItems"
                 :key="index.toString()"
                 class="item__row"
-                :class="{matching: rowColor(index.toString())}">
-
+                :class="{
+                  matching: rowColor(index.toString()),
+                  completed: isCompletedFor(index.toString(), currentQuarterItems)
+                }"
+            >
                 <img :src="'/map-images/item-images/' + itemName(index.toString(), true) + '.png'" class="item__image" />
 
-                <!-- Tracker Input added here -->
+                <!-- Tracker Input for quarter items -->
                 <input
                     type="number"
                     v-model.number="itemTracker[index]"
@@ -143,22 +151,17 @@ export default defineComponent({
         return {
             progressData: factionProgress,
             quarterProgress: quarterProgress,
-
             currentMissionsItems: {} as any,
             previousMissionItems: {} as any,
-
             currentQuarterItems: {} as any,
             previousQuarterItems: {} as any,
-
             currentItems: {} as any,
             previousItems: {} as any,
             keycardInfo: keyCardInfo,
             stringTables: stringTables["Materials"],
             toast: useToast(),
-
             techLevelsData: techLevelsData,
             techTreeData: techTreeData,
-
             slideIndex: 1,
             searchValue: "",
             itemTracker: {} // stores counts keyed by item id/name
@@ -174,8 +177,7 @@ export default defineComponent({
         rowColor(name: string): boolean {
             if (this.searchValue.length < 3) return false;
             const current = itemName(name);
-            if (current.toLowerCase().includes(this.searchValue.toLowerCase())) return true;
-            return false;
+            return current.toLowerCase().includes(this.searchValue.toLowerCase());
         },
         plusSlides(n: number) {
             this.showSlides((this.slideIndex += n));
@@ -185,12 +187,8 @@ export default defineComponent({
         },
         showSlides(n: number) {
             let slides = document.getElementsByClassName("item-list__container-inner") as any;
-            if (n > slides.length) {
-                this.slideIndex = 1;
-            }
-            if (n < 1) {
-                this.slideIndex = slides.length;
-            }
+            if (n > slides.length) this.slideIndex = 1;
+            if (n < 1) this.slideIndex = slides.length;
             for (let i = 0; i < slides.length; i++) {
                 slides[i].style.display = "none";
             }
@@ -278,9 +276,9 @@ export default defineComponent({
         itemName(item: string, urlFormat?: boolean): string {
             return itemName(item, urlFormat);
         },
-        // New method that checks if the user-entered amount meets or exceeds the required amount
-        isCompleted(key: string): boolean {
-            const required = this.currentItems[key] || 0;
+        // New method: checks if the user-entered amount meets/exceeds the required amount for a given list.
+        isCompletedFor(key: string, list: any): boolean {
+            const required = list[key] || 0;
             const entered = this.itemTracker[key] || 0;
             return entered >= required;
         }
