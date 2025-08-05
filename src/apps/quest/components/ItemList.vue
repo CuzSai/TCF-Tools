@@ -19,6 +19,7 @@
         </div>
     </section>
 
+    <!-- All Items Section -->
     <div class="item-list__container-inner fade">
         <p v-if="Object.keys(currentItems).length > 0">Complete missions and upgrades to update the list</p>
         <p v-else class="complete">You have completed every mission and upgrade.</p>
@@ -27,14 +28,16 @@
             <input type="text" v-model="searchValue" placeholder="Search for items..." />
         </div>
 
-        <!-- All Items Section -->
         <section class="list__container">
             <div
                 v-for="(amount, index) in currentItems"
                 :key="index.toString()"
                 class="item__row"
-                :class="{matching: rowColor(index.toString())}">
-
+                :class="{
+                  matching: rowColor(index.toString()),
+                  completed: isCompleted(index.toString())
+                }"
+            >
                 <img :src="'/map-images/item-images/' + itemName(index.toString(), true) + '.png'" class="item__image" />
 
                 <!-- Tracker Input placed in the middle column -->
@@ -127,14 +130,13 @@
 </template>
 
 <script lang="ts">
-import {keyCardInfo} from "../../map/mapConstants";
-import {defineComponent} from "vue";
-import {POSITION, useToast} from "vue-toastification";
-import {missionData, stringTables, techLevelsData, techTreeData} from "../data";
-import {missions} from "../QuestConstants";
-import {factionProgress, quarterProgress} from "../trackProgress";
-
-import {getItemsOfMission, itemName} from "../utils";
+import { keyCardInfo } from "../../map/mapConstants";
+import { defineComponent } from "vue";
+import { POSITION, useToast } from "vue-toastification";
+import { missionData, stringTables, techLevelsData, techTreeData } from "../data";
+import { missions } from "../QuestConstants";
+import { factionProgress, quarterProgress } from "../trackProgress";
+import { getItemsOfMission, itemName } from "../utils";
 
 export default defineComponent({
     data() {
@@ -159,23 +161,20 @@ export default defineComponent({
 
             slideIndex: 1,
             searchValue: "",
-            itemTracker: {} // new item tracker object to store counts keyed by item id/name
+            itemTracker: {} // stores counts keyed by item id/name
         };
     },
     mounted() {
         this.getIncompleteParts();
         this.getQuarterItems();
         this.updateList();
-
         this.showSlides(this.slideIndex);
     },
     methods: {
         rowColor(name: string): boolean {
             if (this.searchValue.length < 3) return false;
-            const itemName = this.itemName(name);
-
-            if (itemName.toLowerCase().includes(this.searchValue.toLowerCase())) return true;
-
+            const current = itemName(name);
+            if (current.toLowerCase().includes(this.searchValue.toLowerCase())) return true;
             return false;
         },
         plusSlides(n: number) {
@@ -185,7 +184,6 @@ export default defineComponent({
             this.showSlides((this.slideIndex = n));
         },
         showSlides(n: number) {
-            let i;
             let slides = document.getElementsByClassName("item-list__container-inner") as any;
             if (n > slides.length) {
                 this.slideIndex = 1;
@@ -193,10 +191,9 @@ export default defineComponent({
             if (n < 1) {
                 this.slideIndex = slides.length;
             }
-            for (i = 0; i < slides.length; i++) {
+            for (let i = 0; i < slides.length; i++) {
                 slides[i].style.display = "none";
             }
-
             slides[this.slideIndex - 1].style.display = "block";
         },
         getIncompleteParts(): void {
@@ -205,30 +202,16 @@ export default defineComponent({
                 for (let m in missions[f]) {
                     const length = missions[f][m].length;
                     const progress = this.progressData.get()[f][m];
-
                     if (progress >= length) {
-                        // we have already completed this mission
+                        // mission completed
                     } else {
-                        // we have yet to complete this mission in full, so we get the data
                         for (let p in missions[f][m]) {
-                            const part = missions[f][m][p];
-
-                            // we have not completed this part of the mission yet
                             if (progress < parseInt(p) + 1) {
-                                const partData = missionData[part];
-
-                                // just in case, if the data exists
+                                const partData = missionData[missions[f][m][p]];
                                 if (partData) {
-                                    // get the total items we use for this mission
                                     let data = getItemsOfMission(partData["objectives"]);
-
-                                    // save the items, adding duplicate entries together
                                     for (let item in data) {
-                                        if (newData[item]) {
-                                            newData[item] = newData[item] + data[item];
-                                        } else {
-                                            newData[item] = data[item];
-                                        }
+                                        newData[item] = (newData[item] || 0) + data[item];
                                     }
                                 }
                             }
@@ -236,115 +219,71 @@ export default defineComponent({
                     }
                 }
             }
-
-            // sort our items by value, https://stackoverflow.com/questions/1069666/sorting-object-property-by-values#comment130783332_16794116
             const sortedData = Object.keys(newData)
                 .sort((a, b) => newData[b] - newData[a])
-                .reduce((r, k) => ({...r, [k]: newData[k]}), {});
-
-            // save it
-            this.previousMissionItems = {...this.currentMissionsItems};
+                .reduce((r, k) => ({ ...r, [k]: newData[k] }), {});
+            this.previousMissionItems = { ...this.currentMissionsItems };
             this.currentMissionsItems = sortedData;
         },
         getQuarterItems(): void {
             let newData: any = {};
-
-            // Overall quarter level
             let index = 0;
-            for (let level in techLevelsData) {
+            for (let level in this.techLevelsData) {
                 index += 1;
-
                 if (this.quarterProgress.get()["overall"] < index) {
-                    for (let i in techLevelsData[level]["costs"]) {
-                        const item = i;
-                        const amount = techLevelsData[level]["costs"][i];
-
-                        if (newData[item]) {
-                            newData[item] = newData[item] + amount;
-                        } else {
-                            newData[item] = amount;
-                        }
+                    for (let i in this.techLevelsData[level]["costs"]) {
+                        newData[i] = (newData[i] || 0) + this.techLevelsData[level]["costs"][i];
                     }
                 }
             }
-
-            // tech tree levels
-            for (let upgrade in techTreeData) {
-                const levels = techTreeData[upgrade]["levels"];
+            for (let upgrade in this.techTreeData) {
+                const levels = this.techTreeData[upgrade]["levels"];
                 const progress = this.quarterProgress.get()[upgrade];
-
                 if (upgrade >= levels.length) continue;
-
                 for (let l in levels) {
-                    // we have not completed this upgrade yet
                     if (progress < parseInt(l) + 1) {
                         for (let i in levels[l]["costs"]) {
-                            const item = i;
-                            const amount = techTreeData[upgrade]["levels"][l]["costs"][i];
-
-                            if (newData[item]) {
-                                newData[item] = newData[item] + amount;
-                            } else {
-                                newData[item] = amount;
-                            }
+                            newData[i] = (newData[i] || 0) + levels[l]["costs"][i];
                         }
                     }
                 }
             }
-
             const sortedData = Object.keys(newData)
                 .sort((a, b) => newData[b] - newData[a])
-                .reduce((r, k) => ({...r, [k]: newData[k]}), {});
-
-            // save it
-            this.previousQuarterItems = {...this.previousQuarterItems};
+                .reduce((r, k) => ({ ...r, [k]: newData[k] }), {});
+            this.previousQuarterItems = { ...this.previousQuarterItems };
             this.currentQuarterItems = sortedData;
         },
         sendNotification(): void {
-            // send out a function to inform the user that the item list changed when they change if they finished a mission or not
-
-            // JS compares objects by reference type, so two objects with the same
-            // keys and values are always different. Therefore we convert to a string to check if before is same as after.
-            // The order of the object is always the same.
-            // https://stackoverflow.com/questions/11704971/why-are-two-identical-objects-not-equal-to-each-other
             const before = JSON.stringify(this.previousItems);
             const after = JSON.stringify(this.currentItems);
-
             if (before === after) return;
-            this.toast.info("Item list updated", {timeout: 2000, position: POSITION.BOTTOM_RIGHT});
+            this.toast.info("Item list updated", { timeout: 2000, position: POSITION.BOTTOM_RIGHT });
         },
         updateList() {
             let bigList: any = {};
-
             for (let item in this.currentMissionsItems) {
-                const amount = this.currentMissionsItems[item];
-                if (bigList[item]) {
-                    bigList[item] = bigList[item] + amount;
-                } else {
-                    bigList[item] = amount;
-                }
+                bigList[item] = (bigList[item] || 0) + this.currentMissionsItems[item];
             }
-
             for (let item in this.currentQuarterItems) {
-                const amount = this.currentQuarterItems[item];
-                if (bigList[item]) {
-                    bigList[item] = bigList[item] + amount;
-                } else {
-                    bigList[item] = amount;
-                }
+                bigList[item] = (bigList[item] || 0) + this.currentQuarterItems[item];
             }
-
             const sortedData = Object.keys(bigList)
                 .sort((a, b) => bigList[b] - bigList[a])
-                .reduce((r, k) => ({...r, [k]: bigList[k]}), {});
-
-            this.previousItems = {...this.currentItems};
+                .reduce((r, k) => ({ ...r, [k]: bigList[k] }), {});
+            this.previousItems = { ...this.currentItems };
             this.currentItems = sortedData;
             this.sendNotification();
         },
         itemName(item: string, urlFormat?: boolean): string {
             return itemName(item, urlFormat);
         },
+        // New method that checks if the user-entered amount meets or exceeds the required amount
+        isCompleted(key: string): boolean {
+            const required = this.currentItems[key] || 0;
+            const entered = this.itemTracker[key] || 0;
+            return entered >= required;
+        }
     },
     watch: {
         progressData: {
@@ -388,6 +327,13 @@ p.complete {
     gap: 0.5rem;
     align-items: center;
     height: var(--space-xl);
+    position: relative;
+    /* add transition for smooth overlay effect */
+    transition: background-color 0.3s ease;
+}
+
+.item__row.completed {
+    background-color: rgba(0, 128, 0, 0.2);
 }
 
 .item__row span {
@@ -444,9 +390,7 @@ p.complete {
     grid-template-columns: 1fr 1fr 1fr;
     width: 100%;
     text-align: center;
-
     margin: 0 0 var(--space-md);
-
     cursor: pointer;
     border-collapse: collapse;
 }
@@ -454,9 +398,7 @@ p.complete {
 .quarter-line__selector div {
     text-transform: uppercase;
     letter-spacing: 0.4rem;
-
     padding: 0.5rem;
-
     position: relative;
     border-collapse: collapse;
     border: 1px solid var(--border-color-base);
@@ -467,6 +409,7 @@ p.complete {
         grid-template-columns: 1fr 1fr;
     }
 }
+
 .quarter-line__selector-tab {
     display: flex;
     flex-direction: row;
@@ -479,6 +422,7 @@ p.complete {
 .quarter-line__selector-tab span {
     text-align: center;
 }
+
 .quarter-line__selector-tab img {
     width: 2rem;
 }
@@ -497,13 +441,13 @@ p.complete {
     width: 100%;
     height: 100%;
     border-bottom: 2px solid transparent;
-
     transition: 0.4s ease-in-out;
 }
 
 .quarter-line__selector div:hover:not(.active-slide)::before {
     border-bottom-color: var(--color-base--subtle);
 }
+
 .active-slide::before:hover {
     border-bottom-color: var(--color-base--subtle) !important;
 }
@@ -516,7 +460,6 @@ p.complete {
     width: 100%;
     height: 100%;
     border-bottom: 2px solid var(--color-base--subtle);
-
     transition: 0.4s ease-in-out;
 }
 
@@ -533,13 +476,10 @@ p.complete {
 .search-container {
     width: 100%;
     display: flex;
-
     justify-content: center;
     align-items: center;
-
     padding-bottom: 1rem;
     margin-bottom: 1rem;
-
     border-bottom: 1px solid var(--border-color-base);
 }
 
@@ -551,13 +491,13 @@ p.complete {
 }
 
 .item-tracker-input {
-    width: 40px;             /* reduced width */
-    height: 1.8rem;          /* set a fixed small height */
+    width: 40px;
+    height: 1.8rem;
     font-size: 0.9rem;
     padding: 0.2rem;
     border: 1px solid var(--border-color-base);
     border-radius: 4px;
     text-align: center;
-    margin-left: 0.5rem;      /* offset to the right */
+    margin-left: 0.5rem;
 }
 </style>
